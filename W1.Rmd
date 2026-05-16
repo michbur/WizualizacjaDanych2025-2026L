@@ -56,11 +56,6 @@ Riseup: https://pad.riseup.net/p/WWD-tmp
 Mail: michalburdukiewicz@gmail.com
 
 
-## Materiały
-
-<img src="img/repo.png" width="700px" class="center">
-
-
 ## Literatura
 
  - Wilke, C. (2020). Podstawy wizualizacji danych. Zasady tworzenia atrakcyjnych wykresów. (https://clauswilke.com/dataviz/)
