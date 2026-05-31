@@ -1,0 +1,261 @@
+---
+title: "Przykłady i rozwiązania"
+author: "Michał Burdukiewicz"
+date: "31-05-2026"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+theme_set(theme_bw())
+```
+
+```{r}
+dat <- read.csv("./data/polish-driver-license.csv") 
+```
+
+Źródło danych: https://github.com/michbur/polish-driver-license
+
+## Rysunek 1
+
+```{r}
+group_by(dat, age, voivodeship) %>% 
+  summarise(mean = mean(count)) %>% 
+  ggplot(aes(x = age, y = mean, fill = voivodeship)) +
+  geom_col() +
+  ggtitle("Przed poprawkami")
+```
+
+Cel: pokazanie średniej liczby osób, które uzyskały prawo jazdy w danym wieku w zależności od województwa.
+
+Zmiany:
+
+Atrybuty wizualne:
+    oś x - wiek
+    oś y - średnia 
+    (bez zmian)
+Geometrie:
+    wykres słupkowy ale bez wartości skumulowanych 
+Facety: podział na 16 mniejszych wykresów (jeden wykres = jedno województwo)
+Statystyki:    
+
+```{r, fig.height=8}
+group_by(dat, age, voivodeship) %>% 
+  summarise(mean = mean(count)) %>% 
+  ggplot(aes(x = age, y = mean, fill = voivodeship)) +
+  geom_col(position = "dodge") +
+  facet_wrap(~ voivodeship)
+  ggtitle("Po poprawkach") 
+```
+
+## Rysunek 2
+
+```{r}
+group_by(dat, gender, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  mutate(fraction = total/sum(total)) %>% 
+  ggplot(aes(x = gender, y = fraction, fill = voivodeship)) +
+  geom_col() +
+  ggtitle("Przed poprawkami")
+```
+
+Cel: pokazanie frakcji kobiet i mężczyzn uzyskujących prawo jazdy w danym województwie.
+
+Zmiany: 
+
+Atrybuty wizualne:
+    opcja 1:
+    oś x - województwa
+    oś y - frakcja kobiet i mężczyzn
+    
+    opcja 2:
+    oś x - województwa i dodatkowy podział na kobiety i mężczyzn
+    oś y - faktyczna liczebność lub frakcja kobiet i mężczyzn
+
+użycie dwóch kolorów (kobiety i mężczyźni), np. niebieski i pomarańczowy
+
+Geometrie: wykres słupkowy (skumulowany dla opcji 1, zwykły dla opcji 2)
+
+Facety: dla każdego województwa osobna faseta (16 osobnych wykresów) (dla opcji 2)
+
+Statystyki:    
+    udział procentowy kobiet i mężczyzn dla danego województwa
+
+
+```{r}
+group_by(dat, gender, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  ungroup() %>% 
+  group_by(voivodeship) %>% 
+  mutate(fraction = total/sum(total)) %>% 
+  ggplot(aes(x = voivodeship, y = fraction, fill = gender)) +
+  geom_col() +
+  scale_fill_manual(values = c("#91bfdb", "#fc8d59")) +
+  theme(legend.position = "bottom") +
+  ggtitle("Po poprawkach") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+## Rysunek 3
+
+```{r}
+group_by(dat, month, year, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  filter(voivodeship == "WOJ. MAZOWIECKIE") %>% 
+  ggplot(aes(x = factor(year), y = total)) +
+  geom_boxplot() +
+  scale_x_discrete("Year") +
+  scale_color_discrete("Month") +
+  geom_point(aes(color = factor(month))) +
+  ggtitle("Mazowieckie", "Przed poprawkami")
+```
+
+Cel: pokazanie zmienności liczby uzyskanych praw jazdy w skali roku w zależności od roku w województwie mazowieckim.
+
+Atrybuty wizualne: 
+Osie: linie ciągłe w kolorze czarnym
+Oś X: miesiące
+Oś Y: total
+Tytuł wykresu: Liczba wydanych praw jazdy w XXXX roku w woj. Mazowieckim
+Wykres liniowy z punktami odpowiadającymi miesiącom w tym samym kolorze co krzywa dla danego roku
+
+Geometrie:
+Wykres liniowy z punktami odpowiadającymi miesiącom    
+    
+Facety:
+4 oddzielne wykresy liniowe pokazujace zmienność danych w danym roku
+
+Statystyki: 
+Brak
+   
+Koordynaty:
+Układ kartezjański
+
+Motyw:
+Wykres na białym tle     
+
+
+```{r}
+group_by(dat, month, year, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  filter(voivodeship == "WOJ. MAZOWIECKIE") %>% 
+  ggplot(aes(x = month, y = total)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous("Month", breaks = 1L:6*2) +
+  facet_wrap(~ year) +
+  ggtitle("Liczba uzyskanych praw jazdy w województwie mazowieckim", "Po poprawkach")
+```
+
+
+## Rysunek 4
+
+```{r}
+group_by(dat, gender, age) %>% 
+  summarise(total = sum(count)) %>% 
+  ggplot(aes(x = age, y = total, color = gender)) +
+  geom_point() +
+  ggtitle("Przed poprawkami")
+
+```
+
+Cel: pokazać zależność liczby uzyskanych praw jazdy w zależności od wieku i płci.
+
+Zmiany:
+
+Atrybuty wizualne:
+kolory dla płci, mapowianie do osi: oś y - lata rosnąco od dołu do góry (przedziały wiekowe ), oś X suma w obu kierunkach, na lewo męzczyżni, na prawo kobiety.
+Geometrie:
+Wykres demograficzny w kilku sekcjach, 
+idąc o dołu.
+- sekcja 1 : lata 17-25 osobne wiersze dla każdego roku,
+- sekcja 2: wiersze zsumowane: lata 26 -35, 36-45
+- sekcja 3: wiersze zasumowane 46-70, 70 i więcej 
+
+Facety:
+    brak
+Statystyki:    
+   suma, 
+
+
+
+```{r}
+plot_dat <- mutate(dat, age2 = cut(age, breaks = c(0, 17, 25, 35, 45, 70, max(dat$age)), include.lowest = TRUE)) %>% 
+ group_by(gender, age2) %>% 
+ summarise(total = sum(count)) %>% 
+  mutate(total = ifelse(gender == "M", -total, total)) 
+
+ggplot(plot_dat, aes(x = age2, y = total, fill = gender)) +
+  geom_col() +
+  coord_flip() +
+  scale_y_continuous(labels = function(x) abs(x)) +
+  ggtitle("Po poprawkach")
+
+```
+
+## Rysunek 5
+
+```{r,fig.height=7}
+group_by(dat, month, age) %>% 
+  summarise(total = sum(count)) %>% 
+  ggplot(aes(x = month, y = total)) +
+  geom_point() + 
+  facet_wrap(~ age) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("Przed poprawkami")
+```
+
+Cel: pokazać liczbę praw jazdy uzyskiwanych przez osoby w różnym wieku w zależności od miesiąca.
+
+Zmiany: 
+osobne wykresy dla grup wiekowych 14–17(nastolatkowie), 18–25(młodzi dorośli), 26–45(dorosły), 46–65(starsi dorośli), 65-93(seniorzy), oś y liczba praw jazdy (dopasowanie skali dla każdego wykresu do maksimum danych), oś x miesiące
+
+```{r,fig.height=7}
+mutate(dat, age2 = cut(age, breaks = c(0, 17, 25, 45, 65, max(dat$age)), include.lowest = TRUE)) %>% 
+  group_by(month, age2) %>% 
+  summarise(total = sum(count)) %>% 
+  ggplot(aes(x = month, y = total)) +
+  geom_point() + 
+  facet_wrap(~ age2, scales = "free_y") +
+  scale_x_continuous("Month", breaks = 1L:6*2) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  ggtitle("Po poprawkach")
+```
+
+## Rysunek 6
+
+```{r,fig.height=7}
+group_by(dat, year, gender, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  ggplot(aes(x = year, y = gender, fill = total)) +
+  geom_tile(color = "black") +
+  facet_wrap(~ voivodeship) +
+  ggtitle("Przed poprawkami")
+```
+
+Cel: pokazać liczbę uzyskanych praw jazdy dla poszczególnych województw w zależności od płci i roku.
+
+Zmiany:
+
+Atrybuty wizualne: oś X: rok, oś Y: linia ciągła: liczba praw jazdy, kolor: płeć np. niebieski vs czerwony
+legenda: kolor lini vs płeć
+opisy osi: np. data[rok], płeć[m, k]
+opisy facetów: b/z
+tytuł wykresu: "Liczba uzyskanych praw jazdy w zależności od płci i roku."
+Geometrie: linie łączące punkty w czasie, wyraźny punkt na przecięciu linii, siatka -> linia przerywana, wyszarzona
+Facety: podział na województwa -> siatka mniejszych wykresów -> osobny panel na każde woj.
+skala: wspólny początek OY i OX. Jeżeli linie będą się nakładać -> wykres słupkowy lub zmniejszenie skali
+Statystyki: brak. zostaje: ilość ze względu na płeć / rok
+
+```{r,fig.height=7}
+group_by(dat, year, gender, voivodeship) %>% 
+  summarise(total = sum(count)) %>% 
+  ggplot(aes(x = year, y = total, color = gender, linetype = gender)) +
+  geom_line() +
+  facet_wrap(~ voivodeship, ncol = 3) +
+  theme(legend.position = "bottom") +
+  ggtitle("Po poprawkach")
+```
